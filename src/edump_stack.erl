@@ -12,7 +12,8 @@
 
 parse(Data) ->
     Lines = binary:split(Data, <<"\n">>, [global]),
-    [parse_line(Line) || Line <- Lines].
+    [parse_line(Line) || Line <- Lines,
+                         byte_size(Line) > 0].
 
 heap_ptrs(Stack) ->
     heap_ptrs(Stack, []).
