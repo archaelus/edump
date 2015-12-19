@@ -44,5 +44,6 @@ parse_var(VarNum, <<"SCatch 0x", Addr2:8/binary, " ", Info/binary>>) ->
 parse_var(VarNum, Rest) ->
     {{var, VarNum}, edump_mem:parse(Rest)}.
 
-parse_addr(Addr, <<"SReturn addr 0x", Addr2:8/binary, " ", Info/binary>>) ->
+parse_addr(Addr, <<"SReturn addr 0x", Rest/binary>>) ->
+    [Addr2, Info] = binary:split(Rest, <<" ">>),
     {{ptr, Addr}, {return_to, Addr2, Info}}.
