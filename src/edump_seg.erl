@@ -11,6 +11,7 @@
         ,type/1
         ,try_parse_all/2
         ,first_parse_failure/2
+        ,segment_types/1
         ]).
 
 -include("edump_seg.hrl").
@@ -77,6 +78,8 @@ first_parse_failure(Type, Handle) ->
         [] -> no_failures
     end.
 
+segment_types(Handle) ->
+    lists:usort([type(Seg) || Seg <- edump_idx:segments(Handle)]).
 
 %%====================================================================
 %% Internal functions

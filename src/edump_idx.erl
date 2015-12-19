@@ -8,7 +8,6 @@
         ,to_file/1
         ,to_file/2
         ,segments/1
-        ,segment_types/1
         ,seg_id/1
         ,find_by_id/2
         ,find_by_ids/2
@@ -83,9 +82,6 @@ segments(#handle{} = H) ->
     segments(handle_index(H));
 segments(#index{segments=Segs}) ->
     Segs.
-
-segment_types(#index{segments=Segs}) ->
-    [Seg#seg.id || Seg <- Segs].
 
 read_seg(false, _) ->
     not_present;
