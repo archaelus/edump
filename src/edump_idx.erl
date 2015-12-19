@@ -103,6 +103,8 @@ find_by_ids(Ids, Index) ->
 find(Filter, Index) ->
     lists:filter(Filter, segments(Index)).
 
+segments_of_type(any, Index) ->
+    segments(Index);
 segments_of_type(Type, Index) ->
     find(fun (#seg{id={T, _}}) when T =:= Type -> true;
              (#seg{id=T}) when T =:= Type -> true;
