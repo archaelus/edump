@@ -7,6 +7,7 @@
         ,proc_graph/1
         ,try_parse/1
         ,try_parse/2
+        ,pread/3
         ]).
 
 %%====================================================================
@@ -32,6 +33,12 @@ try_parse(Type, Dump) when is_list(Dump) ->
     try_parse(Type, open(Dump));
 try_parse(Type, Dump) ->
     edump_seg:first_parse_failure(Type, Dump).
+
+pread(File, Start, End) when is_list(File) ->
+    {ok, FD} = file:open(File, [binary, raw]),
+    Ret = file:pread(FD, Start, End-Start),
+    file:close(FD),
+    Ret.
 
 %%====================================================================
 %% Internal functions
