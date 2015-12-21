@@ -15,6 +15,9 @@
         ,read_by_id/2
         ,read_by_ids/2
         ,read_seg/2
+        ,read_full_seg/2
+        ,read_full_seg/3
+        ,read_full/4
         ]).
 
 -include("edump_seg.hrl").
@@ -46,7 +49,7 @@ open(CrashdumpFile) ->
 
 default_options() ->
     #{write_index => true,
-      index_checking => full,
+      index_checking => by_size,
       force_rebuild => false}.
 
 open(CrashdumpFile, Opts = #{force_rebuild := true}) ->
@@ -63,7 +66,13 @@ open(CrashdumpFile, Opts = #{force_rebuild := true}) ->
 open(CrashdumpFile, Opts) ->
     case index_exists(CrashdumpFile, Opts) of
         {exists, Index, IndexFile} ->
-            handle_from_index(CrashdumpFile, IndexFile, Index);
+            {ok, Fd} = open_raw(CrashdumpFile),
+            case check_index(CrashdumpFile, Index, Fd, Opts) of
+                {index, Fd, Index} ->
+                    handle_from_index(CrashdumpFile, Fd, IndexFile, Index);
+                {error, _} = Err ->
+                    Err
+            end;
         {no_index, IndexFile} ->
             open(CrashdumpFile, Opts#{force_rebuild => true,
                                       index_file => IndexFile})
@@ -88,6 +97,28 @@ read_seg(false, _) ->
 read_seg(Seg = #seg{},
          #handle{} = H) ->
     raw_read_seg(Seg, handle_fd(H)).
+
+seg_size(#seg{data_start = undefined}) ->
+    0;
+seg_size(#seg{data_start = Start,
+              seg_end = End}) ->
+    End - Start.
+
+seg_size_full(#seg{seg_start = Start,
+                   seg_end = End}) ->
+    End - Start.
+
+read_full_seg(S, H) ->
+    read_full_seg(S, 0, H).
+
+read_full_seg(#seg{seg_start = Start,
+                   seg_end = End}, Slack, H) ->
+    read_full(Start, End, Slack, H).
+
+read_full(Start, End, Slack, #handle{} = H) ->
+    IOStart = Start - Slack,
+    IOEnd = End + Slack,
+    file:pread(handle_fd(H), IOStart, IOEnd - IOStart).
 
 seg_id(#seg{id = ID}) -> ID.
 
@@ -155,7 +186,7 @@ to_file(Idx) ->
 to_file(File, Idx) ->
     Data = #index_file{vsn = my_vsn(),
                        index = Idx},
-    file:write_file(File, erlang:term_to_binary(Data)).
+    file:write_file(File, erlang:term_to_binary(Data, [compressed])).
 
 fixup(#index_file{vsn = FileVSN, index=Idx}, IgnoreMismatch) ->
     case my_vsn() of
@@ -217,10 +248,14 @@ first_block(File) ->
 block_fd(#pos{f = F}) -> F.
 
 block_init(F) ->
-    {ok, RE} = re:compile("^=(?<seg>.*)(?<nl>\n?)", [multiline]),
+    {ok, RE} = re:compile("\n=(?<seg>.*)(?<nl>\n?)", [multiline]),
+    %% Construct a fake first block that pretends a \n exists before
+    %% the first line. This allows us to always match \n= as the
+    %% segment boundary.
     next_block(#pos{f = F,
-                    file_offset=0,
-                    seg_re = RE}, <<>>).
+                    file_offset=-1,
+                    buffer = <<"\n">>,
+                    seg_re = RE}, <<"\n">>).
 
 next_block(#pos{f = F} = LastBlock, RemainingBuffer) ->
     NextBlock = buf_end(LastBlock),
@@ -261,17 +296,20 @@ build_index(Block) ->
     build_index(Block, []).
 
 build_index({ok, Block}, Segments) ->
-    case add_to_index(scan_segs(Block), Segments) of
+    BlockSegs = scan_segs(Block),
+    case add_to_index(BlockSegs, Segments) of
         [#seg{id=incomplete_header, seg_start=SegStart}|NewSegs] ->
-            Remaining = buf_part(Block, SegStart),
+            %% Remaining is seg_start (-1 so we include a newline)
+            Remaining = buf_part(Block, SegStart-1),
             build_index(next_block(Block, Remaining), NewSegs);
         NewSegs ->
             build_index(next_block(Block, <<>>), NewSegs)
     end;
 build_index({last_block, Block}, Segments) ->
-    NewSegs = add_to_index(scan_segs(Block), Segments),
-    IndexSegs = lists:reverse(fix_last_seg(buf_end(Block), NewSegs)),
-    {index, block_fd(Block), #index{segments = IndexSegs}};
+    FileEnd = buf_end(Block),
+    LastSegs = scan_segs(Block),
+    NewSegs = fix_last_seg(FileEnd, add_to_index(LastSegs, Segments)),
+    {index, block_fd(Block), #index{segments = lists:reverse(NewSegs)}};
 build_index({error, _} = E, _) ->
     E.
 
@@ -315,27 +353,28 @@ add_seg_to_index(Seg = #seg{}, []) ->
 add_seg_to_index(Seg = #seg{seg_start=StartNext}, Idx) ->
     [Seg | fix_last_seg(StartNext, Idx)].
 
-fix_last_seg(_, [#seg{data_start=undefined}|_] = Segs) ->
-    %% Empty segment already fixed
-    Segs;
 fix_last_seg(StartNext,
-             [#seg{seg_end=End}|_] = Segs)
-  when is_integer(End), End + 1 =:= StartNext ->
-    %% Segment already correct
-    Segs;
-fix_last_seg(StartNext,
-             [Prev = #seg{data_start = StartNext,
+             [Prev = #seg{data_start = Start,
                           seg_end = unknown} | Segs])
-  when is_integer(StartNext) ->
+  when is_integer(Start), Start >= StartNext ->
     %% Fix empty length segment
     [Prev#seg{data_start=undefined,
               seg_end=StartNext-1} | Segs];
+fix_last_seg(_, [#seg{data_start=undefined}|_] = Segs) ->
+    %% Empty segment already fixed
+    Segs;
 fix_last_seg(StartNext,
              [Prev = #seg{data_start=Start, seg_end=unknown} | Segs])
   when is_integer(Start), is_integer(StartNext),
        StartNext > Start ->
     %% Fix regular segment end
-    [Prev#seg{seg_end=StartNext-1} | Segs].
+    [Prev#seg{seg_end=StartNext-1} | Segs];
+fix_last_seg(StartNext,
+             [#seg{seg_end=End}|_] = Segs)
+  when is_integer(End), End =:= StartNext - 1 ->
+    %% Segment already correct
+    Segs.
+
 
 my_vsn() ->
     proplists:get_value(vsn,?MODULE:module_info(attributes)).
@@ -345,23 +384,30 @@ crashdump(File, Opts) ->
         {error, _} = E -> E;
         {index, Fd, Idx0} ->
             Index = Idx0#index{crashdump_file = File},
-            check_index(Index, Fd, Opts)
+            check_index(File, Index, Fd, Opts)
     end.
 
-check_index(Index, Fd, Opts = #{index_checking := by_size}) ->
-    case file:position(Fd, eof) of
-        {ok, Size} when Size < 1000000 ->
-            check_index(Index, Fd, Opts#{index_checking => full});
-        {ok, _TooBig} ->
-            check_index(Index, Fd, Opts#{index_checking => none})
+check_index(CrashdumpFile, Index, Fd, Opts = #{index_checking := by_size}) ->
+    case filelib:file_size(CrashdumpFile) of
+        Small when Small < 10000000 ->
+            check_index(CrashdumpFile, Index, Fd,
+                        Opts#{index_checking => full});
+        _TooBig ->
+            check_index(CrashdumpFile, Index, Fd,
+                        Opts#{index_checking => cheap})
     end;
-check_index(Index, Fd, #{index_checking := none}) ->
+check_index(_CrashdumpFile, Index, Fd, #{index_checking := none}) ->
     {index, Fd, Index};
-check_index(Index, Fd, #{index_checking := full}) ->
-    run_checks(Index, Fd, [fun check_gaps/2,
-                           fun check_readability/2]);
-check_index(Index, Fd, Opts) ->
-    check_index(Index, Fd, Opts#{index_checking => full}).
+check_index(_CrashdumpFile, Index, Fd, #{index_checking := Checkinglevel}) ->
+    run_checks(Index, Fd, checks(Checkinglevel)).
+
+checks(cheap) ->
+    [fun check_gaps/2,
+     fun check_seg_data/2,
+     fun check_size/2];
+checks(full) ->
+    [fun check_readability/2 | checks(cheap)].
+
 
 
 run_checks(Index, Fd, []) ->
@@ -393,18 +439,26 @@ gaps(Pos, [#seg{seg_start=OtherPos, seg_end=NewPos} | Segs], Acc) ->
 check_readability(Index, Fd) ->
     Segments = segments(Index),
     io:format("Checking ~p segments...~n", [length(Segments)]),
-    check_segs(Fd, Segments).
+    seg_readable(Fd, Segments).
 
-check_segs(_Fd, []) ->
+seg_readable(_Fd, []) ->
     io:format("~n", []),
     ok;
-check_segs(Fd, [S = #seg{} | Rest]) ->
+seg_readable(Fd, [S = #seg{} | Rest]) ->
     try raw_read_seg(S, Fd) of
+        <<"=", _/binary>> = Data->
+            {error,
+             {data_starts_with_seg_marker, S, Data}};
         Data when is_binary(Data) ->
-            io:format(".", []),
-            check_segs(Fd, Rest);
+            case check_for_marker(Data) of
+                no_marker ->
+                    io:format(".", []),
+                    seg_readable(Fd, Rest);
+                _ ->
+                    {error, {seg_contains_marker, Data}}
+            end;
         Else ->
-    io:format("~n", []),
+            io:format("~n", []),
             {error, {seg_read_failed, S,
                      {not_binary, Else}}}
     catch
@@ -412,4 +466,84 @@ check_segs(Fd, [S = #seg{} | Rest]) ->
             io:format("~n", []),
             {error, {seg_read_failed, S,
                      {Class, Ex, erlang:get_stacktrace()}}}
+    end.
+
+check_for_marker(Data) ->
+    case binary:match(Data, <<"\n=">>) of
+        nomatch ->
+            no_marker;
+        _ ->
+            marker
+    end.
+
+check_seg_data(#index{segments=Segs}, _FD) ->
+    case [ S
+           || S <- Segs,
+              bad_seg_data(S) ] of
+        [] ->
+            ok;
+        BadSegs ->
+            {error, {segs_with_bad_data, BadSegs}}
+    end.
+
+bad_seg_data(#seg{id = Id,
+                  seg_start = Start,
+                  data_start = undefined,
+                  seg_end = End})
+  when is_integer(Start),
+       is_integer(End) ->
+    lists:member(edump_seg:type(Id),
+                 non_zero_length_types());
+bad_seg_data(#seg{seg_start = Start,
+                  data_start = Data,
+                  seg_end = End})
+  when is_integer(Start),
+       is_integer(Data),
+       is_integer(End) ->
+    false;
+bad_seg_data(_) ->
+    true.
+
+non_zero_length_types() ->
+    [erl_crash_dump
+    ,memory
+    ,hash_table
+    ,index_table
+    ,allocated_areas
+    ,allocator
+    ,port
+    ,ets
+    ,timer
+    ,visible_node
+    ,not_connected
+    ,loaded_modules
+    ,mod
+    ,'fun'
+    ,proc
+    ,proc_dictionary
+    ,proc_messages
+    ,proc_heap
+    ,proc_stack
+    ,atoms
+    ].
+
+check_size(Index, FD) ->
+    Segments = segments(Index),
+    Size = lists:foldl(fun (S, Acc) ->
+                               seg_size_full(S) + Acc
+                       end,
+                       0,
+                       Segments),
+    NewLines = length(Segments),
+    FullSize = NewLines + Size,
+    case file:position(FD, eof) of
+        {ok, FullSize} ->
+            ok;
+        {ok, Other} ->
+            {error, {wrong_size,
+                     [{segs, FullSize},
+                      {missing, Other - FullSize},
+                      {file, Other}]}};
+        Else ->
+            Else
     end.
