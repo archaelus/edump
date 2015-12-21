@@ -14,7 +14,7 @@ to_dot(File, DG) ->
     to_dot(File, DG, default_options()).
 
 default_options() ->
-    #{graph_attributes => #{ rankdir => "lr" }}.
+    #{graph_attributes => ["rankdir=lr"]}.
 
 to_dot(File, DG, Opts0) ->
     Opts = maps:merge(default_options(), Opts0),
@@ -65,7 +65,7 @@ pids_dot_info(DG, Opts) ->
 dot_info(DG, Opts = #{ graph_attributes := G }) ->
     #{ procs => pids_dot_info(DG, Opts),
        relations => relations_dot_info(DG, Opts),
-       graph => G
+       graph_attributes => G
      }.
 
 relations_dot_info(DG, Opts) ->

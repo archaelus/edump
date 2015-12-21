@@ -9,7 +9,7 @@
 
 main(["index" | Args]) ->
     case getopt:parse_and_check(index_options(), Args) of
-        {ok, {IndexOpts, Args1}} ->
+        {ok, {IndexOpts, _Args1}} ->
             Dump = proplists:get_value(file, IndexOpts),
             Rebuild = proplists:get_value(rebuild, IndexOpts),
             Checking = proplists:get_value(checking, IndexOpts),
@@ -24,22 +24,49 @@ main(["index" | Args]) ->
                     io:format("Indexed ~p in ~ps~n",
                               [Dump, Time/1000000])
             end;
-        {error, {missing_required_option, What}} ->
-            io:format("Missing option: ~p~n", [What]),
-            getopt:usage(index_options(), "edump index");
         {error, What} ->
-            io:format("Problem with arguments: ~p~n", [What]),
+            getopt:format_error(index_options(), What),
             getopt:usage(index_options(), "edump index")
     end;
-main(Args) ->
-    getopt:usage(top_options(), "edump").
+main(["graph" | Args]) ->
+    case getopt:parse_and_check(graph_options(), Args) of
+        {ok, {GraphOpts, _Args1}} ->
+            Dump = proplists:get_value(file, GraphOpts),
+            DotFile = proplists:get_value(dot_file, GraphOpts),
+            Attrs = string:tokens(proplists:get_value(graph_attrs, GraphOpts),
+                                  ";"),
+            GOpts = #{graph_attributes => Attrs,
+                      include_edge =>
+                          case proplists:get_value(prune, GraphOpts) of
+                              true ->
+                                  fun edump_proc_dot:fewer_edges/3;
+                              false ->
+                                  undefined
+                          end},
+            io:format("Graph opts: ~p~n", [GOpts]),
+            case edump_analyse:proc_graph(Dump, DotFile,
+                                          GOpts) of
+                ok ->
+                    io:format("Wrote graph to ~p~n", [DotFile]);
+                {error, What} ->
+                    io:format("Couldn't write graph: ~p~n", [What]),
+                    erlang:halt(1)
+            end;
+        {error, What} ->
+            getopt:format_error(graph_options(), What),
+            getopt:usage(graph_options(), "edump graph"),
+            erlang:halt(1)
+    end;
+main(_Args) ->
+    getopt:usage(top_options(), "edump"),
+    erlang:halt(1).
 
 top_options() ->
     [
      %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
      {help,     $h, "help",     undefined, "Print this help."},
      {version,  $v, "version",  undefined, "Show version information."},
-     {task,     undefined, undefined, atom, "Task to run: index"}
+     {task,     undefined, undefined, atom, "Task to run: index, graph"}
     ].
 
 index_options() ->
@@ -52,6 +79,19 @@ index_options() ->
      {checking, $c, "checking", {atom, by_size},
       "Index checking level (none, cheap, full, by_size)"},
      {file,     undefined, undefined, string, "Crashdump file to index."}
+    ].
+
+graph_options() ->
+    [
+     %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
+     {help,     $h, "help",     undefined, "Print this help."},
+     {version,  $v, "version",  undefined, "Show version information."},
+     {graph_attrs, $g, "graph-attributes", {string, "rankdir=\"TB\";size=\"8,6\";root=\"erlang\";dpi=\"150\""},
+     "Graph attributes in DOT format. Specify attributes as one string
+     separated by ';', with no terminating ';'."},
+     {prune,    $p, "prune",   {boolean, true}, "Prune the output to produce a tidier graph (shows fewer relations between entities in the dump"},
+     {file,     undefined, undefined, string, "Crashdump file to graph."},
+     {dot_file, $d, undefined, string, "Dotfile for graph output."}
     ].
 
 %%====================================================================

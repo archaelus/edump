@@ -60,4 +60,11 @@ ok
 ```
 
 This produces a graph like this:
-![image](priv/erl_crash.png)
+![image](test/data/erl_crash.png)
+
+## Edump escript
+
+The `edump` escript provides a commandline interface to some common functionality:
+
+* `edump index` parses dump files and produces index files
+* `edump graph` produces a GraphViz dot file from a dump file. It will  index the dump file if necessary.

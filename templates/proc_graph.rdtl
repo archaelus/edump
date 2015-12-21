@@ -1,4 +1,6 @@
 digraph {
+{% for attr in graph_attributes %}  {{ attr|safe }};
+{% endfor %}
 
 {% for proc in procs %}  "{{ proc.id|safe }}" [{{ proc.dot_attrs|join:","|safe }}];
 {% endfor %}
