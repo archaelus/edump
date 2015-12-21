@@ -28,7 +28,7 @@
 parse(<<"A", Rest/binary>>) ->
     {Len, Atom} = thing_len(Rest),
     parse_atom(Len, Atom);
-parse(<<"H",HeapAddr:8/binary>>) ->
+parse(<<"H",HeapAddr/binary>>) ->
     {heap_ptr, HeapAddr};
 parse(<<"t", Rest/binary>>) ->
     {Len, TupleData} = thing_len(Rest),
