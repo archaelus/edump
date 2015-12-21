@@ -11,6 +11,7 @@
         ,processes/1
         ,ports/1
         ,info/2
+        ,main/1
         ]).
 
 %%====================================================================
@@ -52,6 +53,10 @@ ports(Handle) ->
 
 info(Id, Handle) ->
     edump_seg:id_info(Id, Handle).
+
+
+main(Args) ->
+    edump_script:main(Args).
 
 %%====================================================================
 %% Internal functions
