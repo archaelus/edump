@@ -32,7 +32,8 @@ atom_int_block(Data) ->
 
 int_list(L) ->
     [ binary_to_integer(I)
-      || I <- binary:split(L, <<" ">>, [global]) ].
+      || I <- binary:split(L, <<" ">>, [global]),
+         I =/= <<>> ].
 
 kv_section(LineParser, Data) when is_function(LineParser, 1) ->
     [ LineParser(kv_line(Line))

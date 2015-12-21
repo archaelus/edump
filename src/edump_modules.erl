@@ -29,4 +29,10 @@ mod({<<"Current size">>, Sz}) ->
 mod({<<"Current attributes">>, Attr}) ->
     {current_attributes, edump_parse:hexbin(Attr)};
 mod({<<"Current compilation info">>, Info}) ->
+    {current_compilation_info, Info};
+mod({<<"Old size">>, Sz}) ->
+    {current_size, binary_to_integer(Sz)};
+mod({<<"Old attributes">>, Attr}) ->
+    {current_attributes, edump_parse:hexbin(Attr)};
+mod({<<"Old compilation info">>, Info}) ->
     {current_compilation_info, Info}.

@@ -109,6 +109,8 @@ parse_data(no_distribution, <<>>) ->
     [];
 parse_data(visible_node, Data) ->
     edump_node:parse(Data);
+parse_data(hidden_node, Data) ->
+    edump_node:parse(Data);
 parse_data(not_connected, Data) ->
     edump_node:parse(Data);
 parse_data(loaded_modules, Data) ->

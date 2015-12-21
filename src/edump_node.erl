@@ -17,7 +17,10 @@ parse(Data) ->
 kv_line({<<"Name">>, Name}) ->
     {name, binary_to_atom(Name, latin1)};
 kv_line({<<"Creation">>, N}) ->
-    {creation, binary_to_integer(N)};
+    {creation, case edump_parse:int_list(N) of
+                   [C] -> C;
+                   Else -> Else
+               end};
 kv_line({<<"Controller">>, <<"#Port",_/binary>> = Port}) ->
     {controller, {port, Port}};
 kv_line({<<"Controller">>, <<"<",_/binary>> = Pid}) ->
