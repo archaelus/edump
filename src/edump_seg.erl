@@ -85,11 +85,51 @@ segment_types(Handle) ->
 %% Internal functions
 %%====================================================================
 
+parse_data(erl_crash_dump, Data) ->
+    edump_dump:parse(Data);
+parse_data(memory, Data) ->
+    edump_parse:atom_int_block(Data);
+parse_data(hash_table, Data) ->
+    edump_parse:atom_int_block(Data);
+parse_data(index_table, Data) ->
+    edump_parse:atom_int_block(Data);
+parse_data(allocated_areas, Data) ->
+    edump_allocator:parse_areas(Data);
+parse_data(allocator, Data) ->
+    edump_allocator:parse(Data);
+parse_data(port, Data) ->
+    edump_port:parse(Data);
+parse_data(ets, Data) ->
+    edump_ets:parse(Data);
+parse_data(timer, Data) ->
+    edump_timer:parse(Data);
+parse_data(node, <<>>) ->
+    [];
+parse_data(no_distribution, <<>>) ->
+    [];
+parse_data(visible_node, Data) ->
+    edump_node:parse(Data);
+parse_data(not_connected, Data) ->
+    edump_node:parse(Data);
+parse_data(loaded_modules, Data) ->
+    edump_modules:parse_loaded(Data);
+parse_data(mod, Data) ->
+    edump_modules:parse_mod(Data);
+parse_data('fun', Data) ->
+    edump_fun:parse(Data);
 parse_data(proc, Data) ->
     edump_proc:parse(Data);
+parse_data(proc_dictionary, Data) ->
+    edump_heap:parse_dict(Data);
+parse_data(proc_messages, Data) ->
+    edump_heap:parse_msgs(Data);
 parse_data(proc_heap, Data) ->
     edump_heap:parse(Data);
 parse_data(proc_stack, Data) ->
     edump_stack:parse(Data);
-parse_data(Type, Data) ->
-    {cant_parse, Type, Data}.
+parse_data(binary, Data) ->
+    [edump_parse:len_hexbin(Data)];
+parse_data(atoms, Data) ->
+    [{atom, A} || A <- edump_parse:lines(Data)];
+parse_data('end', <<>>) ->
+    [].

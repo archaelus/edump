@@ -2,6 +2,8 @@
 
 %% API exports
 -export([parse/1
+        ,parse_dict/1
+        ,parse_msgs/1
         ]).
 
 %%====================================================================
@@ -9,13 +11,23 @@
 %%====================================================================
 
 parse(Data) ->
-    Lines = binary:split(Data, <<"\n">>, [global]),
     [begin
          [Addr, Rest] = binary:split(Line, <<":">>),
          {Addr, edump_mem:parse(Rest)}
      end
-     || Line <- Lines,
-        byte_size(Line) > 0].
+     || Line <- edump_parse:lines(Data)].
+
+parse_dict(Data) ->
+    [ edump_mem:parse(Addr)
+      || Addr <- edump_parse:lines(Data) ].
+
+parse_msgs(Data) ->
+    [begin
+         [Addr, Rest] = binary:split(Line, <<":">>),
+         {edump_mem:parse(Addr), edump_mem:parse(Rest)}
+     end
+     || Line <- edump_parse:lines(Data)].
+
 
 %%====================================================================
 %% Internal functions

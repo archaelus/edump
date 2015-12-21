@@ -13,7 +13,7 @@
 %%====================================================================
 
 parse(Data) when is_binary(Data) ->
-    [parse_proc_data(L) || L <- binary:split(Data, <<"\n">>, [global])].
+    [parse_proc_data(L) || L <- edump_parse:lines(Data)].
 
 related_segs({proc, Id}, Handle) ->
     edump_idx:find_by_ids([{proc_stack, Id},
