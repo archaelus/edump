@@ -1,0 +1,85 @@
+digraph {
+        size="12,8";
+        
+
+  "<0.23.0>" [label="user\n<0.23.0>",shape=oval];
+  "<0.27.0>" [label="kernel_safe_sup\n<0.27.0>",shape=oval];
+  "<0.33.0>" [label="<0.33.0>",style=dotted,shape=oval];
+  "<0.17.0>" [label="file_server_2\n<0.17.0>",shape=oval];
+  "<0.25.0>" [label="<0.25.0>",shape=oval];
+  "<0.11.0>" [label="rex\n<0.11.0>",shape=oval];
+  "<0.10.0>" [label="kernel_sup\n<0.10.0>",shape=oval];
+  "<0.0.0>" [label="init\n<0.0.0>",shape=oval];
+  "#Port<0.404>" [label="#Port<0.404>",shape=box];
+  "<0.41.0>" [label="<0.41.0>",shape=oval];
+  "<0.16.0>" [label="global_group\n<0.16.0>",shape=oval];
+  "<0.37.0>" [label="edump_viewer\n<0.37.0>",shape=oval];
+  "<0.24.0>" [label="<0.24.0>",shape=oval];
+  "#Port<0.413>" [label="#Port<0.413>",shape=box];
+  "#Port<0.47>" [label="#Port<0.47>",shape=box];
+  "<0.13.0>" [label="<0.13.0>",shape=oval];
+  "<0.15.0>" [label="inet_db\n<0.15.0>",shape=oval];
+  "<0.36.0>" [label="edump_sup\n<0.36.0>",shape=oval];
+  "<0.20.0>" [label="standard_error\n<0.20.0>",shape=oval];
+  "<0.12.0>" [label="global_name_server\n<0.12.0>",shape=oval];
+  "<0.3.0>" [label="erl_prim_loader\n<0.3.0>",shape=oval];
+  "<0.44.0>" [label="disk_log_sup\n<0.44.0>",shape=oval];
+  "<0.45.0>" [label="disk_log_server\n<0.45.0>",shape=oval];
+  "<0.34.0>" [label="<0.34.0>",shape=oval];
+  "<0.31.0>" [label="<0.31.0>",color=green,shape=oval];
+  "<0.39.0>" [label="<0.39.0>",style=dotted,shape=oval];
+  "<0.14.0>" [label="<0.14.0>",shape=oval];
+  "<0.8.0>" [label="<0.8.0>",shape=oval];
+  "<0.26.0>" [label="<0.26.0>",shape=oval];
+  "<0.6.0>" [label="application_controller\n<0.6.0>",shape=oval];
+  "<0.18.0>" [label="code_server\n<0.18.0>",shape=oval];
+  "#Port<0.1>" [label="#Port<0.1>",shape=box];
+  "<0.19.0>" [label="standard_error_sup\n<0.19.0>",shape=oval];
+  "<0.22.0>" [label="user_drv\n<0.22.0>",shape=oval];
+  "<0.35.0>" [label="<0.35.0>",shape=oval];
+  "<0.5.0>" [label="error_logger\n<0.5.0>",shape=oval];
+  "erlang" [label="erlang",shape=egg];
+  "<0.21.0>" [label="<0.21.0>",shape=oval];
+  "<0.9.0>" [label="<0.9.0>",shape=oval];
+  "<0.2.0>" [label="<0.2.0>",style=dotted,shape=oval];
+  "<0.7.0>" [label="<0.7.0>",style=dotted,shape=oval];
+
+
+  "<0.0.0>" -> "erlang" [label="spawned_by"];
+  "<0.12.0>" -> "<0.13.0>" [dir=none];
+  "<0.27.0>" -> "<0.44.0>" [dir=none];
+  "<0.22.0>" -> "<0.23.0>" [dir=none];
+  "<0.12.0>" -> "<0.14.0>" [dir=none];
+  "<0.3.0>" -> "#Port<0.1>" [dir=none];
+  "<0.10.0>" -> "<0.16.0>" [dir=none];
+  "<0.10.0>" -> "<0.18.0>" [dir=none];
+  "<0.36.0>" -> "<0.37.0>" [dir=none];
+  "<0.23.0>" -> "<0.5.0>" [dir=none];
+  "<0.0.0>" -> "<0.5.0>" [dir=none];
+  "<0.10.0>" -> "<0.11.0>" [dir=none];
+  "<0.10.0>" -> "<0.27.0>" [dir=none];
+  "<0.0.0>" -> "<0.6.0>" [dir=none];
+  "<0.25.0>" -> "<0.31.0>" [dir=none];
+  "<0.10.0>" -> "<0.12.0>" [dir=none];
+  "<0.34.0>" -> "<0.35.0>" [dir=none];
+  "<0.19.0>" -> "<0.20.0>" [dir=none];
+  "<0.10.0>" -> "<0.17.0>" [dir=none];
+  "<0.22.0>" -> "<0.24.0>" [dir=none];
+  "<0.10.0>" -> "<0.19.0>" [dir=none];
+  "<0.21.0>" -> "<0.23.0>" [dir=none];
+  "<0.10.0>" -> "<0.26.0>" [dir=none];
+  "<0.24.0>" -> "<0.25.0>" [dir=none];
+  "<0.10.0>" -> "<0.21.0>" [dir=none];
+  "<0.0.0>" -> "<0.3.0>" [dir=none];
+  "<0.10.0>" -> "<0.15.0>" [dir=none];
+  "<0.35.0>" -> "<0.36.0>" [dir=none];
+  "<0.34.0>" -> "<0.6.0>" [dir=none];
+  "<0.27.0>" -> "<0.45.0>" [dir=none];
+  "<0.20.0>" -> "#Port<0.404>" [dir=none];
+  "<0.10.0>" -> "<0.9.0>" [dir=none];
+  "<0.8.0>" -> "<0.9.0>" [dir=none];
+  "<0.22.0>" -> "#Port<0.413>" [dir=none];
+  "<0.17.0>" -> "#Port<0.47>" [dir=none];
+  "<0.6.0>" -> "<0.8.0>" [dir=none];
+
+}
