@@ -22,10 +22,6 @@
 
 -include("edump_seg.hrl").
 
--record(pos, {f :: file:fd(),
-              file_offset :: pos_integer(),
-              buffer = <<>> :: binary()}).
-
 -record(index, {crashdump_file :: string(),
                 segments = [] :: [#seg{}]}).
 
@@ -249,161 +245,52 @@ open_raw(File) ->
     file:open(File, [raw, binary, read,
                      read_ahead]).
 
-first_block(File) ->
-    {ok, F} = open_raw(File),
-    block_init(F).
-
-block_fd(#pos{f = F}) -> F.
-
-block_init(F) ->
-    %% Construct a fake first block that pretends a \n exists before
-    %% the first line. This allows us to always match \n= as the
-    %% segment boundary.
-    next_block(#pos{f = F,
-                    file_offset=-1,
-                    buffer = <<"\n">>}, <<"\n">>).
-
-next_block(#pos{f = F} = LastBlock, RemainingBuffer) ->
-    NextBlock = buf_end(LastBlock),
-    NewOffset = NextBlock - byte_size(RemainingBuffer),
-    case file:pread(F, NextBlock, ?READ_SIZE) of
-        {ok, Buf} ->
-            {case byte_size(Buf) of
-                 ?READ_SIZE -> ok;
-                 _ -> last_block
-             end,
-             LastBlock#pos{buffer = <<RemainingBuffer/binary,
-                                      Buf/binary>>,
-                           file_offset = NewOffset}};
+%% Build a list of segments in reverse order by scanning lines in the
+%% crashdump file.
+build_index(FD, Offset, Acc) ->
+    case file:read_line(FD) of
+        {ok, <<"=", HeaderLine/binary>> = Line} ->
+            NewOffset = byte_size(Line)+Offset,
+            Header = binary:part(HeaderLine, 0, byte_size(HeaderLine)-1),
+            Seg = #seg{id=segment_id(Header),
+                       seg_start=Offset,
+                       data_start=unknown,
+                       seg_end=unknown},
+            build_index(FD, NewOffset, [Seg | fix_seg_end(Offset, Acc)]);
+        {ok, Line} when is_binary(Line) ->
+            NewOffset = byte_size(Line) + Offset,
+            build_index(FD, NewOffset, fix_data_start(Offset, Acc));
         eof ->
-            {last_block, LastBlock#pos{buffer = RemainingBuffer,
-                                       file_offset = NewOffset}};
-        {error, _} = Err ->
-            Err
+            Segs = lists:reverse(fix_seg_end(Offset, Acc)),
+            {segs, Segs};
+        {error, _} = E ->
+            E
     end.
 
-buf_end(#pos{file_offset = Start, buffer = Buf}) ->
-    Start + byte_size(Buf).
+fix_seg_end(_, []) ->
+    [];
+fix_seg_end(Offset, [S = #seg{data_start=unknown, seg_end=unknown} | Rest]) ->
+    [S#seg{data_start=undefined, seg_end=Offset-1} | Rest];
+fix_seg_end(Offset, [S = #seg{seg_end=unknown} | Rest]) ->
+    [S#seg{seg_end=Offset-1} | Rest].
 
-buf_part(#pos{buffer=Buf, file_offset=Offset}, From) ->
-    BufFrom = From - Offset,
-    Len = byte_size(Buf) - BufFrom,
-    binary:part(Buf, BufFrom, Len).
-
-%% Read Block
-%% Scan for segment marks
-%% Scan for newlines after Marks
-%% If no newline after last mark, truncate block to [last_mark..end], recurse
-
-%% Build a list of segments in reverse order by scanning the crashdump file.
-build_index(Block) ->
-    build_index(Block, []).
-
-build_index({ok, Block}, Segments) ->
-    BlockSegs = scan_segs(Block),
-    case add_to_index(BlockSegs, Segments) of
-        [#seg{id=incomplete_header, seg_start=SegStart} | NewSegs] ->
-            %% Remaining is seg_start (-1 so we include a newline)
-            Remaining = buf_part(Block, SegStart-1),
-            build_index(next_block(Block, Remaining), NewSegs);
-        NewSegs ->
-            build_index(next_block(Block, <<>>), NewSegs)
-    end;
-build_index({last_block, Block}, Segments) ->
-    FileEnd = buf_end(Block),
-    LastSegs = scan_segs(Block),
-    [#seg{id=incomplete_header, seg_start=SegStart}| Rest] =
-        add_to_index(LastSegs, Segments),
-    SegStart = FileEnd-5,
-    NewSegs = [end_seg(SegStart, FileEnd) | Rest],
-    {index, block_fd(Block), #index{segments = lists:reverse(NewSegs)}};
-build_index({error, _} = E, _) ->
-    E.
-
-add_to_index(Segs, Idx) when is_list(Segs), is_list(Idx) ->
-    Segs ++ Idx.
-
-end_seg(Start, End) ->
-    #seg{id='end', seg_start=Start, data_start=undefined, seg_end=End-1}.
-
-scan_segs(Block = #pos{buffer = Buffer}) ->
-    case binary:matches(Buffer, <<"\n=">>) of
-        [] -> [];
-        SegMarkers ->
-            match_to_segs(Block, SegMarkers, [])
-    end.
-
-%% No segments in block
-%%
-match_to_segs(_Block, [], Acc) -> Acc;
-%%
-%% Last segment header in a buffer - it's incomplete, so don't try and
-%% find the header boundary (too many corner cases)
-%% seg marker | header | end of block
-%% seg marker | hea | end of block -- incomplete
-%% seg marker | header | \n | end of block | data ...
-%% seg marker | header | \n | end of block | = (new seg, prev is empty)
-%%
-match_to_segs(Block, [{Pos, 2}], Acc) ->
-    SegStart = Pos + 1 + Block#pos.file_offset,
-    [#seg{id=incomplete_header, seg_start=SegStart} | Acc];
-%%
-%% More than one segment header in the block - this means we know the
-%% exact start and end for one of them, so we can parse correctly.
-%%
-%% Buffer diagram:
-%% \n=header\ndata...\n=
-%% ^ {Pos, 2} -- match start
-%%   ^ -- seg start
-%%    ^ Pos+2 -- seg header start
-%%          ^ seg header end
-%%          ^ nlpos
-%%            ^ data start
-%%                   ^ seg end
-%%                   ^ next match start {NextPos, 2}
-match_to_segs(Block, [{Header1Pos, 2} | [ {Header2Pos, 2} | _] = Rest ], Acc) ->
-    FileOffset = Block#pos.file_offset,
-    Seg1Start = Header1Pos+1, % (we consider seg start to be at the =...)
-    Seg1End = Header2Pos, % the \n of the next segment
-    %% Because we know the end of this segment, find_headerwill only
-    %% fail on empty segments.
-    Seg = case find_header(Block, Seg1Start+1, Header2Pos) of
-              {ID, undefined} ->
-                  #seg{id=ID,
-                       seg_start = Seg1Start + FileOffset,
-                       seg_end = Seg1End + FileOffset,
-                       data_start = undefined};
-              {ID, DataStart} when DataStart > Seg1Start,
-                                   DataStart < Seg1End ->
-                  #seg{id=ID,
-                       seg_start = Seg1Start + FileOffset,
-                       seg_end = Seg1End + FileOffset,
-                       data_start = DataStart + FileOffset}
-          end,
-    match_to_segs(Block, Rest,
-                  [ Seg | Acc ]).
-
--type buf_pos() :: pos_integer().
--spec find_header(#pos{}, From::buf_pos(), End::buf_pos()) ->
-                         {segment_id(), PosAfterHeaderNL::buf_pos()}.
-find_header(#pos{buffer=Buf}, From, End) ->
-    case binary:match(Buf, <<"\n">>, [{scope, {From, End-From}}]) of
-        {NLPos, 1} ->
-            SegHeader = binary:part(Buf, From, NLPos-From),
-            {segment_id(SegHeader), NLPos+1};
-        nomatch ->
-            {segment_id(binary:part(Buf, From, End-From)), undefined}
-    end.
+fix_data_start(_Offset, [#seg{data_start=I}|_] = Acc)
+  when is_integer(I) ->
+    Acc;
+fix_data_start(Offset, [S = #seg{data_start=unknown} | Rest]) ->
+    [S#seg{data_start=Offset} | Rest].
 
 my_vsn() ->
     proplists:get_value(vsn,?MODULE:module_info(attributes)).
 
 crashdump(File, Opts) ->
-    case build_index(first_block(File)) of
+    {ok, F} = open_raw(File),
+    case build_index(F, 0, []) of
         {error, _} = E -> E;
-        {index, Fd, Idx0} ->
-            Index = Idx0#index{crashdump_file = File},
-            check_index(File, Index, Fd, Opts)
+        {segs, Segs} ->
+            Index = #index{crashdump_file = File,
+                           segments = Segs},
+            check_index(File, Index, F, Opts)
     end.
 
 check_index(CrashdumpFile, Index, Fd, Opts = #{index_checking := by_size}) ->
@@ -543,7 +430,6 @@ non_zero_length_types() ->
     ,proc
     ,proc_dictionary
     ,proc_messages
-    ,proc_stack
     ,atoms
     ].
 
