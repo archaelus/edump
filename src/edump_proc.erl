@@ -2,7 +2,7 @@
 
 %% API exports
 -export([parse/1
-        ,related_segs/2
+        ,related_ids/1
         ,related_procs/1
         ,procs_in_index/1
         ,read/2
@@ -15,12 +15,11 @@
 parse(Data) when is_binary(Data) ->
     [parse_proc_data(L) || L <- edump_parse:lines(Data)].
 
-related_segs({proc, Id}, Handle) ->
-    edump_idx:find_by_ids([{proc_stack, Id},
-                           {proc_heap, Id},
-                           {proc_dictionary, Id},
-                           {ets, Id}],
-                          Handle).
+related_ids({proc, Id}) ->
+    [{proc_stack, Id},
+     {proc_heap, Id},
+     {proc_dictionary, Id},
+     {ets, Id}].
 
 related_procs(Info) ->
     lists:append([spawned_by(Info),

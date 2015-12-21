@@ -9,8 +9,8 @@
         ,to_file/2
         ,segments/1
         ,seg_id/1
-        ,find_by_id/2
-        ,find_by_ids/2
+        ,find_id/2
+        ,find_ids/2
         ,segments_of_type/2
         ,read_by_id/2
         ,read_by_ids/2
@@ -119,10 +119,10 @@ read_full(Start, End, Slack, #handle{} = H) ->
 
 seg_id(#seg{id = ID}) -> ID.
 
-find_by_id(Id, Index) ->
+find_id(Id, Index) ->
     lists:keyfind(Id, #seg.id, segments(Index)).
 
-find_by_ids(Ids, Index) ->
+find_ids(Ids, Index) ->
     find(fun (#seg{id=Id}) ->
                  lists:member(Id, Ids)
          end,
@@ -142,10 +142,10 @@ segments_of_type(Type, Index) ->
 
 read_by_ids(Ids, Index) ->
     [{seg_id(Seg), read_seg(Seg, Index)}
-     || Seg <- find_by_ids(Ids, Index)].
+     || Seg <- find_ids(Ids, Index)].
 
 read_by_id(Id, Index) ->
-    read_seg(find_by_id(Id, Index), Index).
+    read_seg(find_id(Id, Index), Index).
 
 %%====================================================================
 %% Internal functions

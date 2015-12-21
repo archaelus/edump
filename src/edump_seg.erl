@@ -8,6 +8,10 @@
         ,parse_id/2
         ,parse_seg/2
         ,id/1
+        ,ids_of_type/2
+        ,id_info/2
+        ,related/2
+        ,related_ids/2
         ,type/1
         ,try_parse_all/2
         ,first_parse_failure/2
@@ -22,12 +26,59 @@
 
 id(#seg{id = ID}) -> ID.
 
+id_pid({K, Pid})
+  when K =:= proc;
+       K =:= ets;
+       K =:= proc_dictionary;
+       K =:= proc_heap;
+       K =:= proc_messages;
+       K =:= proc_stack ->
+    Pid.
+
+id_info(Id, Handle) ->
+    id_info(type(Id), Id, Handle).
+
+id_info(proc, Id, Handle) ->
+    {proc, parse_id(Id, Handle),
+     related_ids(Id, Handle)};
+id_info(proc_dictionary, Id, Handle) ->
+    {proc_dictionary,
+     edump_heap:reconstruct_dict(parse_id(Id, Handle),
+                                 heap_for(Id, Handle))};
+id_info(proc_messages, Id, Handle) ->
+    {proc_messages,
+     edump_heap:reconstruct_dict(parse_id(Id, Handle),
+                                 heap_for(Id, Handle))};
+id_info(proc_stack, Id, Handle) ->
+    {proc_stack,
+     edump_stack:reconstruct(parse_id(Id, Handle),
+                             heap_for(Id, Handle))};
+id_info(Type, Id, Handle) ->
+    {Type, parse_id(Id, Handle),
+     []}.
+
+heap_for(Id, Handle) ->
+    parse_id(heap_id_for(Id), Handle).
+
+heap_id_for(Id) ->
+    {proc_heap, id_pid(Id)}.
+
+related({proc, _} = Id, Handle) ->
+    edump_idx:find_ids(edump_proc:related_ids(Id), Handle).
+
+related_ids(Id, Handle) ->
+    [ id(S) || S <- related(Id, Handle) ].
+
 type(#seg{} = Seg) ->
     type(id(Seg));
 type({Type, _}) ->
     Type;
 type(Type) ->
     Type.
+
+ids_of_type(Type, Handle) ->
+    [ id(S)
+      || S <- edump_idx:segments_of_type(Type, Handle) ].
 
 format(Segs, Handle) ->
     io:format("~s", [fmt_segs(Segs, Handle)]).
@@ -85,6 +136,8 @@ segment_types(Handle) ->
 %% Internal functions
 %%====================================================================
 
+parse_data(_, not_present) ->
+    not_present;
 parse_data(erl_crash_dump, Data) ->
     edump_dump:parse(Data);
 parse_data(memory, Data) ->

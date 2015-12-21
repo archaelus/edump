@@ -3,6 +3,7 @@
 %% API exports
 -export([parse/1
         ,heap_ptrs/1
+        ,reconstruct/2
         ]).
 -compile(export_all).
 
@@ -26,6 +27,16 @@ heap_ptrs([{{var, _}, V} | Rest], Acc) ->
     heap_ptrs(Rest, process_mem:heap_ptrs(V, Acc));
 heap_ptrs([_|Rest], Acc) ->
     heap_ptrs(Rest, Acc).
+
+reconstruct(Stack, Heap) ->
+    [ r(Item, Heap) || Item <- Stack ].
+
+r({{var, _}, {'catch',_,_}} = I, _Heap) ->
+    I;
+r({{var, _} = V, Else}, Heap) ->
+    {V, edump_heap:reconstruct(Else, Heap)};
+r(Else, _Heap) ->
+    Else.
 
 %%====================================================================
 %% Internal functions

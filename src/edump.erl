@@ -8,6 +8,9 @@
         ,try_parse/1
         ,try_parse/2
         ,pread/3
+        ,processes/1
+        ,ports/1
+        ,info/2
         ]).
 
 %%====================================================================
@@ -39,6 +42,16 @@ pread(File, Start, End) when is_list(File) ->
     Ret = file:pread(FD, Start, End-Start),
     file:close(FD),
     Ret.
+
+
+processes(Handle) ->
+    edump_seg:ids_of_type(proc, Handle).
+
+ports(Handle) ->
+    edump_seg:ids_of_type(port, Handle).
+
+info(Id, Handle) ->
+    edump_seg:id_info(Id, Handle).
 
 %%====================================================================
 %% Internal functions
