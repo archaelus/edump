@@ -1,11 +1,8 @@
 digraph {
-  rankdir=BT;
-  {rank=max "erlang"};
-{% for proc in procs %}
-  "{{ proc.id|safe }}" [{{ proc.dot_attrs|join:","|safe }}];
+
+{% for proc in procs %}  "{{ proc.id|safe }}" [{{ proc.dot_attrs|join:","|safe }}];
 {% endfor %}
 
-{% for rel in relations %}
-   "{{ rel.from|safe }}" -> "{{ rel.to|safe }}" [{{ rel.dot_attrs|join:","|safe }}];
+{% for rel in relations %}  "{{ rel.from|safe }}" -> "{{ rel.to|safe }}" [{{ rel.dot_attrs|join:","|safe }}];
 {% endfor %}
 }

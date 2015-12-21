@@ -40,7 +40,7 @@ build_graph([Seg | Segs], DG, Handle) ->
     build_graph(Segs, DG, Handle).
 
 add_proc(Id, Info, DG) ->
-    digraph:add_vertex(DG, Id, Info).
+    digraph:add_vertex(DG, Id, [{in_dump, true} | Info]).
 
 add_links(Id, Links, DG) ->
     [ add_link(Id, Link, DG) || Link <- Links ],
