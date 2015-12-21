@@ -10,6 +10,7 @@
         ,id/1
         ,ids_of_type/2
         ,id_info/2
+        ,id_for/2
         ,related/2
         ,related_ids/2
         ,type/1
@@ -40,7 +41,8 @@ id_info(Id, Handle) ->
 
 id_info(proc, Id, Handle) ->
     {proc, parse_id(Id, Handle),
-     related_ids(Id, Handle)};
+     [id_info(RelId, Handle)
+      || RelId <- related_ids(Id, Handle)]};
 id_info(proc_dictionary, Id, Handle) ->
     {proc_dictionary,
      edump_heap:reconstruct_dict(parse_id(Id, Handle),
@@ -62,6 +64,9 @@ heap_for(Id, Handle) ->
 
 heap_id_for(Id) ->
     {proc_heap, id_pid(Id)}.
+
+id_for(Type, {_, Id}) ->
+    {Type, Id}.
 
 related({proc, _} = Id, Handle) ->
     edump_idx:find_ids(edump_proc:related_ids(Id), Handle).
