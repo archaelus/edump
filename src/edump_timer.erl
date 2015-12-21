@@ -17,5 +17,9 @@ parse(Data) ->
 kv_line({<<"Message">>, Message}) ->
     {message, binary_to_atom(Message, latin1)};
 kv_line({<<"Time left">>, Rest}) ->
-    [Time, <<"ms">>] = binary:split(Rest, <<" ">>),
-    {time_left, {binary_to_integer(Time), ms}}.
+    case binary:split(Rest, <<" ">>) of
+        [Time, <<"ms">>] ->
+            {time_left, {binary_to_integer(Time), ms}};
+        [Time] ->
+            {time_left, {binary_to_integer(Time), ms}}
+    end.
