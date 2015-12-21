@@ -2,7 +2,6 @@
 
 %% API exports
 -export([from_handle/1
-        ,pg_to_dot/1
         ,pids/1
         ,relations/1
         ]).
@@ -12,24 +11,11 @@
 %%====================================================================
 
 from_handle(Handle) ->
-    Segs = edump_idx:segs_of_type(proc, Handle),
+    Segs = edump_idx:segments_of_type(proc, Handle),
     build_graph(Segs, digraph:new(), Handle).
 
-pg_to_dot(DG) ->
-    Template = read_template("proc_graph.tmpl"),
-    bbmustache:render(Template,
-                      #{pids => pids(DG),
-                        relations => relations(DG)}).
-
-read_template(File) ->
-    file:read_file(template_file(File)).
-
-template_file(File) ->
-    filename:join([code:priv_dir(edump),
-                   "templates", File]).
-
 pids(DG) ->
-    [ digraph:vertex(DG, V) || V <- digraph:vertices(DG)].
+    [ digraph:vertex(DG, V) || V <- digraph:vertices(DG) ].
 
 relations(DG) ->
     [ begin
@@ -46,7 +32,7 @@ build_graph([], DG, _) ->
     DG;
 build_graph([Seg | Segs], DG, Handle) ->
     Id = edump_seg:id(Seg),
-    Info = edump_seg:parse(Seg, Handle),
+    Info = edump_seg:parse_seg(Seg, Handle),
     add_proc(Id, Info, DG),
     add_links(Id,
               edump_proc:related_procs(Info),
@@ -62,21 +48,36 @@ add_links(Id, Links, DG) ->
 
 add_link(Self, {link, Who}, DG) ->
     maybe_add_vertex(Who, DG),
-    digraph:add_edge(DG, Self, Who, link);
+    maybe_add_edge(Self, Who, link, DG);
+%%    maybe_add_edge(Who, Self, link, DG);
 add_link(Self, {spawned_by, Who}, DG) ->
     maybe_add_vertex(Who, DG),
-    digraph:add_edge(DG, Self, Who, spawned_by);
+    maybe_add_edge(Self, Who, spawned_by, DG);
+%%    maybe_add_edge(Who, Self, spawned, DG);
 add_link(Self, {monitored_by, Who, Ref}, DG) ->
     maybe_add_vertex(Who, DG),
-    digraph:add_edge(DG, Who, Self, {monitors, Ref});
+    maybe_add_edge(Self, Who, {monitored_by, Ref}, DG);
 add_link(Self, {monitoring, Who, Ref}, DG) ->
     maybe_add_vertex(Who, DG),
-    digraph:add_edge(DG, Self, Who, {monitors, Ref}).
+    maybe_add_edge(Self, Who, {monitoring, Ref}, DG).
 
 maybe_add_vertex(Who, DG) ->
     case digraph:vertex(DG, Who) of
         false ->
             digraph:add_vertex(DG, Who, []);
         _ ->
+            ok
+    end.
+
+maybe_add_edge(From, To, Label, DG) ->
+    FromEdges = [ digraph:edge(DG, E)
+                  || E <- digraph:out_edges(DG, From) ],
+    case [E || E = {_,F, T, L} <- FromEdges,
+               L =:= Label,
+               F =:= From,
+               T =:= To] of
+        [] ->
+            digraph:add_edge(DG, From, To, Label);
+        [_] ->
             ok
     end.
