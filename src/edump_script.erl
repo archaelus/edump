@@ -57,6 +57,20 @@ main(["graph" | Args]) ->
             getopt:usage(graph_options(), "edump graph"),
             erlang:halt(1)
     end;
+main(["info", Args]) ->
+    case getopt:parse_and_check(info_options(), Args) of
+        {ok, {InfoOpts, Rest}} ->
+            Dump = proplists:get_value(file, InfoOpts),
+            Handle = edump:open(Dump),
+            Kind = proplists:get_value(info, InfoOpts),
+            io:format("Crashdump ~p~n", [Dump]),
+            edump_analyse:info(Kind, Handle),
+            ok;
+        {error, What} ->
+            getopt:format_error(info_options(), What),
+            getopt:usage(info_options(), "edump info"),
+            erlang:halt(1)
+    end;
 main(_Args) ->
     getopt:usage(top_options(), "edump"),
     erlang:halt(1).
@@ -92,6 +106,15 @@ graph_options() ->
      {prune,    $p, "prune",   {boolean, true}, "Prune the output to produce a tidier graph (shows fewer relations between entities in the dump"},
      {file,     undefined, undefined, string, "Crashdump file to graph."},
      {dot_file, $d, undefined, string, "Dotfile for graph output."}
+    ].
+
+info_options() ->
+    [
+     %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
+     {help,     $h, "help",     undefined, "Print this help."},
+     {version,  $v, "version",  undefined, "Show version information."},
+     {file,     undefined, undefined, string, "Crashdump file."},
+     {info,     $i, "info",     {atom,basic}, "Kind of info to extract from crashdump. (e.g. basic, processes, ports, ...)"}
     ].
 
 %%====================================================================
