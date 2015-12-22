@@ -57,14 +57,14 @@ main(["graph" | Args]) ->
             getopt:usage(graph_options(), "edump graph"),
             erlang:halt(1)
     end;
-main(["info", Args]) ->
+main(["info" | Args]) ->
     case getopt:parse_and_check(info_options(), Args) of
         {ok, {InfoOpts, Rest}} ->
             Dump = proplists:get_value(file, InfoOpts),
             Handle = edump:open(Dump),
             Kind = proplists:get_value(info, InfoOpts),
             io:format("Crashdump ~p~n", [Dump]),
-            edump_analyse:info(Kind, Handle),
+            edump_analyse:info(Kind, Handle, maps:from_list(Rest)),
             ok;
         {error, What} ->
             getopt:format_error(info_options(), What),

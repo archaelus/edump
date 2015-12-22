@@ -83,6 +83,10 @@ parse_proc_data(<<"Heap fragment data: ", Data/binary>>) ->
 parse_proc_data(<<"Link list: [", Str/binary>>) ->
     List = binary:part(Str, 0, byte_size(Str) -1),
     {links, parse_link_list(List)};
+parse_proc_data(<<"Reductions: ", Reds/binary>>) ->
+    {reductions, binary_to_integer(Reds)};
+parse_proc_data(<<"Stack+heap: ", Mem/binary>>) ->
+    {stack_plus_heap, binary_to_integer(Mem)};
 parse_proc_data(<<"Program counter: ", PC/binary>>) ->
     [ProgramCounter,Rest] = binary:split(PC, <<" (">>),
     {cp, {ProgramCounter, binary:part(Rest, 0, byte_size(Rest)-1)}};
