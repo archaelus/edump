@@ -346,11 +346,9 @@ gaps(Pos, [#seg{seg_start=OtherPos, seg_end=NewPos} | Segs], Acc) ->
 
 check_readability(Index, Fd) ->
     Segments = segments(Index),
-    io:format("Checking ~p segments...~n", [length(Segments)]),
     seg_readable(Fd, Segments).
 
 seg_readable(_Fd, []) ->
-    io:format("~n", []),
     ok;
 seg_readable(Fd, [S = #seg{} | Rest]) ->
     try raw_read_seg(S, Fd) of
@@ -360,18 +358,15 @@ seg_readable(Fd, [S = #seg{} | Rest]) ->
         Data when is_binary(Data) ->
             case check_for_marker(Data) of
                 no_marker ->
-                    io:format(".", []),
                     seg_readable(Fd, Rest);
                 _ ->
                     {error, {seg_contains_marker, Data}}
             end;
         Else ->
-            io:format("~n", []),
             {error, {seg_read_failed, S,
                      {not_binary, Else}}}
     catch
         Class:Ex ->
-            io:format("~n", []),
             {error, {seg_read_failed, S,
                      {Class, Ex, erlang:get_stacktrace()}}}
     end.
