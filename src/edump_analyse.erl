@@ -72,20 +72,22 @@ mem_info({memory, Mem0, _}) ->
       || {S, Bytes} <-  Descending ].
 
 process_summary(Processes, Opts) ->
-    Sort = maps:get(sort, Opts, pid),
+    Sort = maps:get(sort, Opts, fancy),
     SortFn = case Sort of
                  pid -> fun p_sort_pid/2;
                  mem -> fun p_sort_mem/2;
                  msg_q -> fun p_sort_msg_q/2;
-                 reds -> fun p_sort_reds/2
+                 reds -> fun p_sort_reds/2;
+                 state -> fun p_sort_state/2;
+                 fancy -> fun p_sort_fancy/2
              end,
     Sorted = lists:sort(SortFn, Processes),
     Total = length(Processes),
-    Len = case maps:get(max, Opts, infinity) of
+    Len = case maps:get(max, Opts, 100) of
               N when is_integer(N),
                      N < Total -> N;
               N when is_list(N) ->
-                  list_to_integer(N);
+                  erlang:min(list_to_integer(N), Total);
               _ -> Total
           end,
     Procs = lists:zip(lists:sublist(Sorted, Len),
@@ -94,7 +96,7 @@ process_summary(Processes, Opts) ->
     ok.
 
 list_processes(NumProcesses, Procs) ->
-    io:format("Processes (~p of ~p):~n", [NumProcesses, length(Procs)]),
+    io:format("Processes (~p of ~p):~n", [length(Procs), NumProcesses]),
     PosWidth = integer_to_list(length(integer_to_list(NumProcesses))),
     [ list_process(PosWidth, P)
       || P <- Procs ].
@@ -105,12 +107,12 @@ list_process(PosWidth, {{{proc, Pid}, Info}, Position}) ->
     Msgs = proplists:get_value(message_queue_length, Info),
     Bytes = proplists:get_value(stack_plus_heap, Info, "unknown"),
     PInfo = string:join([[State],
-                         [integer_to_list(Bytes), " mem"],
                          [integer_to_list(Msgs), " msgq"],
+                         [integer_to_list(Bytes), " mem"],
                          [integer_to_list(Reds), " reds"]
                         ], ", "),
     Name = proplists:get_value(name, Info, ""),
-    io:format("  ~"++PosWidth++"w ~10s ~20s (~s)~n",
+    io:format("  ~"++PosWidth++"w ~16s ~20s (~s)~n",
               [Position, Pid, Name, PInfo]).
 
 p_info_sort(Key, {_PidA, InfoA}, {_PidB, InfoB}) ->
@@ -126,5 +128,38 @@ p_sort_msg_q(A, B) ->
 p_sort_reds(A, B) ->
     p_info_sort(reductions, A, B).
 
-p_sort_pid({A, _}, {B, _}) ->
-    A =< B.
+p_sort_state({_, InfoA}, {_, InfoB}) ->
+    proplists:get_value(state, InfoA) =<
+        proplists:get_value(state, InfoB).
+
+p_sort_pid({{proc, A}, _}, {{proc, B}, _}) ->
+    PidA = list_to_pid(binary_to_list(A)),
+    PidB = list_to_pid(binary_to_list(B)),
+    PidA =< PidB.
+
+p_sort_fancy(A, B) ->
+    SortA = sortkeys(A),
+    SortB = sortkeys(B),
+    sort_by_key(SortA, SortB).
+
+sort_by_key([{A, '<'}],
+            [{B, '<'}]) ->
+    A =< B;
+sort_by_key([{A, '>'}],
+            [{B, '>'}]) ->
+    A >= B;
+sort_by_key([{A, _} | RestA],
+            [{B, _} | RestB]) when A =:= B ->
+    sort_by_key(RestA, RestB);
+sort_by_key([{A, '<'} | _],
+            [{B, '<'} | _]) ->
+    A < B;
+sort_by_key([{A, '>'} | _],
+            [{B, '>'} | _]) ->
+    A > B.
+
+sortkeys({{proc, P}, InfoP}) ->
+    [{proplists:get_value(state, InfoP), '<'},
+     {proplists:get_value(message_queue_length, InfoP), '>'},
+     {proplists:get_value(stack_plus_heap, InfoP), '>'},
+     {list_to_pid(binary_to_list(P)), '<'}].
