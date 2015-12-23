@@ -4,12 +4,14 @@
   {registered, []},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    erlydtl
    ]},
   {env,[]},
   {modules, []},
 
-  {contributors, []},
-  {licenses, []},
+  {contributors, ["Geoff Cant"]},
+  {maintainers, ["Geoff Cant"]},
+  {licenses, ["BSD Simplified"]},
   {links, []}
  ]}.

@@ -29,7 +29,7 @@ info(processes, Handle, Opts) ->
 %%====================================================================
 
 scale(Num, {Suffix, Divisor}) ->
-    io_lib:format("~p~s", [Num/Divisor, Suffix]).
+    io_lib:format("~6.3f ~s", [Num/Divisor, Suffix]).
 
 scale(G) when G > 1000000000 ->
     {"G", 1000000000};
