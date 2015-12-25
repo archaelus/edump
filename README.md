@@ -1,6 +1,12 @@
 # edump
 
-Efficient Erlang Crashdump Analysis Tools
+Efficient Erlang Crashdump Analysis Tools.
+
+I find `erl_crash.dump` files essential for debugging production systems after they've crashed, but these files are a pain to deal with by hand. OTP comes with `crashdump_viewer`, but that tool doesn't work with really large files, is hard to use programatically, and tricky to build on.
+
+`edump` is an Erlang library for efficiently parsing and analysing information in `erl_crash.dump` files. The main trick it uses is to build an index of segments in a full crashdump file. Indexing the file, or reading the file without an index requires reading the entire thing to find what you want, but an `edump *.eidx` file will give you random access to segments inside a crashdump of any size.
+
+This library includes code for parsing different kinds of crashdump segment, can reconstruct process dictionaries, message queues and stacks from process heaps, and perform a number of basic analysis on information usually present in crashdumps.
 
 ## Build
 
