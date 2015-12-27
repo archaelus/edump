@@ -9,6 +9,7 @@
         ,to_file/2
         ,segments/1
         ,seg_id/1
+        ,seg_size/1
         ,find_id/2
         ,find_ids/2
         ,segments_of_type/2

@@ -11,8 +11,6 @@ This library includes code for parsing different kinds of crashdump segment, can
 ## Build
 
     $ rebar3 compile
-    $ rebar3 rdtl
-    $ rebar3 escriptize
 
 ## Use
 
