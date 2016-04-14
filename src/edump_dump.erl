@@ -16,20 +16,8 @@
 
 parse(Data) ->
     [Date | Lines] = edump_parse:lines(Data),
-    [{date, Date}
-     | [parse_line(L) || L <- Lines]].
+    [{date, Date} | [edump_parse:kv_line(L) || L <- Lines]].
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
-
-parse_line(<<"Slogan: ", Slogan/binary>>) ->
-    {slogan, Slogan};
-parse_line(<<"System version: ", SystemVersion/binary>>) ->
-    {system_version, SystemVersion};
-parse_line(<<"Compiled: ", Date/binary>>) ->
-    {compiled, Date};
-parse_line(<<"Taints: ", Taints/binary>>) ->
-    {taints, Taints};
-parse_line(<<"Atoms: ", AtomsStr/binary>>) ->
-    {atoms, binary_to_integer(AtomsStr)}.

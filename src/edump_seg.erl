@@ -191,5 +191,7 @@ parse_data(binary, Data) ->
     [edump_parse:len_hexbin(Data)];
 parse_data(atoms, Data) ->
     [{atom, A} || A <- edump_parse:lines(Data)];
+parse_data(scheduler, Data) ->
+    edump_scheduler:parse(Data);
 parse_data('end', <<>>) ->
     [].
