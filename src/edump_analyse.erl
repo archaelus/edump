@@ -16,7 +16,8 @@ proc_graph(CrashdumpFile, DotFile, Options) ->
                           Options).
 
 info(basic, Handle, _Opts) ->
-    basic_info(edump:info({erl_crash_dump,<<"0.1">>}, Handle)),
+    DumpId = hd(edump_seg:ids_of_type(erl_crash_dump, Handle)),
+    basic_info(edump:info(DumpId, Handle)),
     mem_info(edump:info(memory, Handle));
 info(processes, Handle, Opts) ->
     Pids = edump_seg:ids_of_type(proc, Handle),
