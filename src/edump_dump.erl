@@ -16,8 +16,13 @@
 
 parse(Data) ->
     [Date | Lines] = edump_parse:lines(Data),
-    [{date, Date} | [edump_parse:kv_line(L) || L <- Lines]].
+    [{date, Date} | [parse_kv(edump_parse:kv_line(L)) || L <- Lines]].
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+parse_kv({<<"Slogan">>, Slogan}) -> {slogan, Slogan};
+parse_kv({<<"Taints">>, Slogan}) -> {taints, Slogan};
+parse_kv(Other) ->
+    Other.
