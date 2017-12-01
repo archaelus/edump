@@ -9,6 +9,8 @@
         ,kv_section/2
         ,hexbin/1
         ,len_hexbin/1
+        ,term/2
+        ,term_hexbin/2
         ]).
 
 %%====================================================================
@@ -49,6 +51,24 @@ len_hexbin(B) ->
     Binary = hexbin(Bin),
     Length = byte_size(Binary),
     Binary.
+
+%% @doc Try to parse a hex encoded external term format. Returns the
+%% term if safe, otherwise ```{UnsafeTag, ETFBinary}'''.
+term_hexbin(HexBin, UnsafeTag) ->
+    term(hexbin(HexBin), UnsafeTag).
+
+%% @doc Try to parse an external term format from a binary
+%% string. Return either the term, or {UnsafeTag,
+%% OriginalBinary}. This allows callers to safely process binary terms
+%% and be able to distinguish good from bad terms.
+term(BinTerm, UnsafeTag) ->
+    try
+        erlang:binary_to_term(BinTerm, [safe])
+    catch
+        error:badarg ->
+            {UnsafeTag, BinTerm}
+    end.
+
 
 %%====================================================================
 %% Internal functions
