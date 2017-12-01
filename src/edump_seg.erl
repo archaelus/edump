@@ -68,6 +68,10 @@ heap_id_for(Id) ->
 id_for(Type, {_, Id}) ->
     {Type, Id}.
 
+related({proc_heap, _} = Id, Handle) ->
+    Heap = heap_for(Id, Handle),
+    BinRefs = edump_heap:bin_refs(Heap),
+    edump_idx:find_ids(BinRefs, Handle);
 related({proc, _} = Id, Handle) ->
     edump_idx:find_ids(edump_proc:related_ids(Id), Handle).
 

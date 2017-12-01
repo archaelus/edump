@@ -7,12 +7,15 @@
         ,reconstruct/2
         ,reconstruct_dict/2
         ,reconstruct_msgs/2
+        ,bin_refs/1
         ]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
-
+-type addr() :: binary().
+-type heap() :: [{addr(), edump_mem:value()}].
+-spec parse(Data::binary()) -> heap().
 parse(Data) ->
     [begin
          [Addr, Rest] = binary:split(Line, <<":">>),
@@ -68,9 +71,29 @@ r({pid, What}, _Heap) ->
     {'$pid$', What};
 r({port, What}, _Heap) ->
     {'$port$', What};
+r({dist_external, BinTerm}, _Heap) ->
+    edump_parse:term(BinTerm, unsafe_dist_external);
 r(Else, _Heap) ->
     Else.
+
+bin_refs(Heap) ->
+    Refs = list_bin_refs([ Val || {_Addr, Val} <- Heap], ordsets:new()),
+    [{binary, Ref} || Ref <- ordsets:to_list(Refs)].
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+list_bin_refs(List, Acc) ->
+    lists:foldl(fun bin_ref/2, Acc, List).
+
+bin_ref({sub_bin, {_Ptr, _Offset, _Length}} = Ref, Acc) ->
+    ordsets:add_element(Ref, Acc);
+bin_ref({refc_bin, {_Ptr, _Offset, _Length}} = Ref, Acc) ->
+    ordsets:add_element(Ref, Acc);
+bin_ref({cons, Head, Tail}, Acc) ->
+    bin_ref(Tail, bin_ref(Head, Acc));
+bin_ref({tuple, Slots}, Acc) ->
+    list_bin_refs(Slots, Acc);
+bin_ref(_, Acc) ->
+    Acc.

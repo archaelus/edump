@@ -8,17 +8,36 @@
 -type edump_atom() :: {'atom', Name::binary()}.
 -type edump_pid() :: {'pid', edump_idx:seg_id()}.
 -type edump_port() :: {'port', edump_idx:seg_id()}.
--type edump_heap_ptr() :: {'heap', Ptr::binary()}.
+-type edump_heap_ptr() :: {'heap_ptr', Ptr::binary()}.
 -type edump_cons() :: {'cons', Head::edump_types(), Tail::edump_types()}.
+-type edump_binary() :: {'bin', Bytes::binary()}.
+
+-type bin_ptr() :: binary().
+-type bin_offset() :: pos_integer().
+
+-type bin_length() :: pos_integer().
+
+-type bin_ref_info() :: {bin_ptr(),
+                         bin_offset(), bin_length()}.
+
+-type bin_ref() :: {'sub_bin', bin_ref_info()} |
+                   {'refc_bin', bin_ref_info()}.
+
 -type edump_types() :: edump_atom() |
                        edump_pid() |
                        edump_port() |
                        edump_heap_ptr() |
                        edump_tuple() |
                        edump_cons() |
+                       edump_binary() |
+                       number() |
+                       bin_ref() |
+                       {'dist_external', binary()} |
                        'nil'.
 -type edump_tuple() :: {'tuple', edump_types()}.
 
+-type value() :: edump_types().
+-export_type([value/0]).
 
 %%====================================================================
 %% API functions
@@ -54,10 +73,14 @@ parse(<<"Yh", Rest/binary>>) ->
     end;
 parse(<<"Ys", Rest/binary>>) ->
     [Val, Offset, Length] = binary:split(Rest, <<":">>, [global]),
-    {sub_bin, Val, Offset, Length};
+    {sub_bin, {Val,
+               binary_to_integer(Offset, 16),
+               binary_to_integer(Length, 16)}};
 parse(<<"Yc", Rest/binary>>) ->
     [Val, Offset, Length] = binary:split(Rest, <<":">>, [global]),
-    {refc_bin, Val, Offset, Length};
+    {refc_bin, {Val,
+                binary_to_integer(Offset, 16),
+                binary_to_integer(Length, 16)}};
 parse(<<"E", Rest/binary>>) ->
     parse_bytes(Rest, dist_external, broken_dist_external);
 parse(<<"N">>) ->
@@ -71,7 +94,6 @@ heap_ptrs({tuple, Entries}, Acc) ->
                 Entries);
 heap_ptrs(_, Acc) ->
     Acc.
-
 
 %%====================================================================
 %% Internal functions
