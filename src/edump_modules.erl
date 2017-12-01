@@ -27,12 +27,16 @@ loaded({<<"Old code">>, Old}) ->
 mod({<<"Current size">>, Sz}) ->
     {current_size, binary_to_integer(Sz)};
 mod({<<"Current attributes">>, Attr}) ->
-    {current_attributes, edump_parse:hexbin(Attr)};
+    {current_attributes,
+     edump_parse:term_hexbin(Attr, unsafe_attribute_info)};
 mod({<<"Current compilation info">>, Info}) ->
-    {current_compilation_info, Info};
+    {current_compilation_info,
+     edump_parse:term_hexbin(Info, unsafe_compilation_info)};
 mod({<<"Old size">>, Sz}) ->
-    {current_size, binary_to_integer(Sz)};
+    {old_size, binary_to_integer(Sz)};
 mod({<<"Old attributes">>, Attr}) ->
-    {current_attributes, edump_parse:hexbin(Attr)};
+    {old_attributes,
+     edump_parse:term_hexbin(Attr, unsafe_attribute_info)};
 mod({<<"Old compilation info">>, Info}) ->
-    {current_compilation_info, Info}.
+    {old_compilation_info,
+     edump_parse:term_hexbin(Info, unsafe_compilation_info)}.
