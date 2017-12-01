@@ -3,6 +3,7 @@
 %% API exports
 -export([proc_graph/3
         ,info/3
+        ,sort_procs/2
         ]).
 
 %%====================================================================
@@ -24,6 +25,13 @@ info(processes, Handle, Opts) ->
     Processes = [ {Pid, edump_seg:parse_id(Pid, Handle)}
                   || Pid <- Pids ],
     process_summary(Processes, Opts).
+
+sort_procs(Handle, Opts) ->
+    Pids = edump_seg:ids_of_type(proc, Handle),
+    Processes = [ {Pid, edump_seg:parse_id(Pid, Handle)}
+                  || Pid <- Pids ],
+    {_Total, Procs} = sort_processes(Processes, Opts),
+    [ Pid || {{Pid, _}, _Pos} <- Procs].
 
 %%====================================================================
 %% Internal functions
@@ -72,7 +80,7 @@ mem_info({memory, Mem0, _}) ->
       end
       || {S, Bytes} <-  Descending ].
 
-process_summary(Processes, Opts) ->
+sort_processes(Processes, Opts) ->
     Sort = maps:get(sort, Opts, fancy),
     SortFn = case Sort of
                  pid -> fun p_sort_pid/2;
@@ -91,8 +99,12 @@ process_summary(Processes, Opts) ->
                   erlang:min(list_to_integer(N), Total);
               _ -> Total
           end,
-    Procs = lists:zip(lists:sublist(Sorted, Len),
-                      lists:seq(1, Len)),
+    {Total,
+     lists:zip(lists:sublist(Sorted, Len),
+               lists:seq(1, Len))}.
+
+process_summary(Processes, Opts) ->
+    {Total, Procs} = sort_processes(Processes, Opts),
     list_processes(Total, Procs),
     ok.
 

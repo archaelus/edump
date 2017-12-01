@@ -11,6 +11,8 @@
         ,processes/1
         ,ports/1
         ,info/2
+        ,sort_procs/1
+        ,sort_procs/2
         ]).
 
 %% Escript export
@@ -56,7 +58,11 @@ ports(Handle) ->
 info(Id, Handle) ->
     edump_seg:id_info(Id, Handle).
 
+sort_procs(Handle) ->
+    sort_procs(#{}, Handle).
 
+sort_procs(Opts, Handle) ->
+    edump_analyse:sort_procs(Handle, Opts).
 
 %%====================================================================
 %% Internal functions
