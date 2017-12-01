@@ -80,7 +80,7 @@ top_options() ->
      %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
      {help,     $h, "help",     undefined, "Print this help."},
      {version,  $v, "version",  undefined, "Show version information."},
-     {task,     undefined, undefined, atom, "Task to run: index, graph"}
+     {task,     undefined, undefined, atom, "Task to run: index, graph, info"}
     ].
 
 index_options() ->
