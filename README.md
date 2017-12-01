@@ -12,6 +12,10 @@ This library includes code for parsing different kinds of crashdump segment, can
 
     $ rebar3 compile
 
+If you'd like the 'edump' escript tool as well, run
+
+    $ rebar3 escriptize
+
 ## Use
 
 ### Reading a crashdump
@@ -70,7 +74,7 @@ This produces a graph like this when rendered with GraphViz (edump produces only
 
 ## Edump escript
 
-The `edump` escript provides a commandline interface to some common functionality:
+The `edump` escript (found in `_build/default/bin`) provides a commandline interface to some common functionality:
 
 * `edump index` parses dump files and produces index files
 
