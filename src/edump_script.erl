@@ -71,6 +71,19 @@ main(["info" | Args]) ->
             getopt:usage(info_options(), "edump info"),
             erlang:halt(1)
     end;
+main(["try" | Args]) ->
+    case getopt:parse_and_check(try_options(), Args) of
+        {ok, {TryOpts, _Rest}} ->
+            Dump = proplists:get_value(file, TryOpts),
+	    Type = proplists:get_value(type, TryOpts),
+	    io:format("Parsing (segment type: ~p) ~s...~n", [Type, Dump]),
+	    io:format("~p~n", [edump:try_parse(Type, edump:open(Dump))]),
+            ok;
+        {error, What} ->
+            getopt:format_error(try_options(), What),
+            getopt:usage(info_options(), "edump try"),
+            erlang:halt(1)
+    end;
 main(_Args) ->
     getopt:usage(top_options(), "edump"),
     erlang:halt(1).
@@ -80,7 +93,7 @@ top_options() ->
      %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
      {help,     $h, "help",     undefined, "Print this help."},
      {version,  $v, "version",  undefined, "Show version information."},
-     {task,     undefined, undefined, atom, "Task to run: index, graph, info"}
+     {task,     undefined, undefined, atom, "Task to run: index, graph, info, try"}
     ].
 
 index_options() ->
@@ -116,6 +129,16 @@ info_options() ->
      {file,     undefined, undefined, string, "Crashdump file."},
      {info,     $i, "info",     {atom,basic}, "Kind of info to extract from crashdump. (e.g. basic, processes, ports, ...)"}
     ].
+
+try_options() ->
+    [
+     %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
+     {help,     $h, "help",     undefined, "Print this help."},
+     {version,  $v, "version",  undefined, "Show version information."},
+     {type,     $t, "type",    {atom,any}, "Segment type to parse (or any)."},
+     {file,     undefined, undefined, string, "Crashdump file to try parsing."}
+    ].
+
 
 %%====================================================================
 %% Internal functions
