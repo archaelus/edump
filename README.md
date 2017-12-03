@@ -184,5 +184,6 @@ Processes (32 of 32):
 ## Todo list
 
 * edump pstree (ala unix pstree)
-* map support
+* map support (maybe this works already if they're emitted as erl_dist_external?)
+* follow binary references when reconstructing proc stacks/dict/messages
 * Check [all commits in crashdump_viewer since 2015](https://github.com/erlang/otp/commits/master/lib/observer/src/crashdump_viewer.erl)
