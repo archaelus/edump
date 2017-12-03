@@ -27,6 +27,8 @@ parse_kv({<<"Port controls external process">>, Process}) ->
     {driver, {spawn, Process}};
 parse_kv({<<"Port is UNIX fd not opened by emulator">>, <<A, "/", B>>}) ->
     {driver, {unix, A, B}};
+parse_kv({<<"Port controls forker process">>, Process}) ->
+    {driver, {forker, Process}};
 parse_kv({<<"Monitors">>, Data}) ->
     case re:run(Data, <<"\\((?<pid>[<>.0-9]+),(?<ref>#Ref[<>.0-9]+)\\)">>,
                 [global, {capture, all_names, binary}]) of
