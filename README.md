@@ -2,11 +2,29 @@
 
 Efficient Erlang Crashdump Analysis Tools.
 
-I find `erl_crash.dump` files essential for debugging production systems after they've crashed, but these files are a pain to deal with by hand. OTP comes with `crashdump_viewer`, but that tool doesn't work with really large files, is hard to use programatically, and tricky to build on.
+I find `erl_crash.dump` files essential for debugging production
+systems after they've crashed, but these files are a pain to deal with
+by hand. OTP comes with `crashdump_viewer`, but that tool doesn't work
+with really large files, is hard to use programatically, and tricky to
+build on.
 
-`edump` is an Erlang library for efficiently parsing and analysing information in `erl_crash.dump` files. The main trick it uses is to build an index of segments in a full crashdump file. Indexing the file, or reading the file without an index requires reading the entire thing to find what you want, but an `edump *.eidx` file will give you random access to segments inside a crashdump of any size.
+> Note: crashdump_viewer had poor large file support in 2015, but
+> since then it seems to have had updates to use a similar segment
+> indexing strategy. crashdump_viewer probably works reasonably with
+> large files now, but my complaints about it being hard to use
+> programmatically are still true.
 
-This library includes code for parsing different kinds of crashdump segment, can reconstruct process dictionaries, message queues and stacks from process heaps, and perform a number of basic analysis on information usually present in crashdumps.
+`edump` is an Erlang library for efficiently parsing and analysing
+information in `erl_crash.dump` files. The main trick it uses is to
+build an index of segments in a full crashdump file. Indexing the
+file, or reading the file without an index requires reading the entire
+thing to find what you want, but an `edump *.eidx` file will give you
+random access to segments inside a crashdump of any size.
+
+This library includes code for parsing different kinds of crashdump
+segment, can reconstruct process dictionaries, message queues and
+stacks from process heaps, and perform a number of basic analysis on
+information usually present in crashdumps.
 
 ## Build
 
@@ -26,7 +44,12 @@ $ rebar3 shell
 ...<edump Handle>
 ```
 
-`edump:open` parses a crashdump file, creates an index of segments in the dump, (by default) writes the index file to `CrashdumpFile ++ ".eidx"` and returns a usable handle to the index. Further crashdump investigation functions use a `Handle`.
+`edump:open` parses a crashdump file, creates an index of segments in
+the dump, (by default) writes the index file to `CrashdumpFile ++
+".eidx"` and returns a usable handle to the index. Further crashdump
+investigation functions use a `Handle`. This is optimized if there's
+already an `eidx` file for the dump - we skip the dump file completely
+and load the index.
 
 ### Basic info
 
@@ -46,7 +69,10 @@ $ rebar3 shell
  {proc,<<"<0.10.0>">>}|...]
 ```
 
-Indexes store data about crashdump file segments. Segments have ids, for instance `{proc, <<"<0.0.0>">>}` or `{port, <<"#Port<0.1>">>}`. You can get more information about a segment by id:
+Indexes store data about crashdump file segments. Segments have ids,
+for instance `{proc, <<"<0.0.0>">>}` or `{port,
+<<"#Port<0.1>">>}`. You can get more information about a segment by
+id:
 
 ```
 > edump:info({port,<<"#Port<0.1>">>}, Handle).
@@ -59,7 +85,9 @@ Indexes store data about crashdump file segments. Segments have ids, for instanc
 
 ### Drawing Process Graphs
 
-There are some analysis modules that will construct a graph of erlang entities (port, processes, nodes, etc) from the data in a crashdump and turn these into GraphViz dot files for viewing.
+There are some analysis modules that will construct a graph of erlang
+entities (port, processes, nodes, etc) from the data in a crashdump
+and turn these into GraphViz dot files for viewing.
 
 ```
 > Graph = edump:proc_graph(Handle)
@@ -69,17 +97,19 @@ There are some analysis modules that will construct a graph of erlang entities (
 ok
 ```
 
-This produces a graph like this when rendered with GraphViz (edump produces only the `.dot` file):
+This produces a graph like this when rendered with GraphViz (edump
+produces only the `.dot` file):
 ![image](test/dumpfiles/eshell_forced_crash.dump.png)
 
 ## Edump escript
 
-The `edump` escript (found in `_build/default/bin`) provides a commandline interface to some common functionality:
+The `edump` escript (found in `_build/default/bin`) provides a
+commandline interface to some common functionality:
 
 * `edump index` parses dump files and produces index files
 
 ```
-$ edump index -c full test/dumpfiles/eshell_forced_crash.dump                                  
+$ edump index -c full test/dumpfiles/eshell_forced_crash.dump
 Indexing "test/dumpfiles/eshell_forced_crash.dump" [{checking,full},
                                      {file,"test/dumpfiles/eshell_forced_crash.dump"},
                                      {rebuild,false}]
