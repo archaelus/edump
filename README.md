@@ -70,7 +70,7 @@ ok
 ```
 
 This produces a graph like this when rendered with GraphViz (edump produces only the `.dot` file):
-![image](test/data/erl_crash.png)
+![image](test/dumpfiles/eshell_forced_crash.dump.png)
 
 ## Edump escript
 
@@ -79,27 +79,27 @@ The `edump` escript (found in `_build/default/bin`) provides a commandline inter
 * `edump index` parses dump files and produces index files
 
 ```
-$ edump index -c full test/data/erl_crash.dump                                  
-Indexing "test/data/erl_crash.dump" [{checking,full},
-                                     {file,"test/data/erl_crash.dump"},
+$ edump index -c full test/dumpfiles/eshell_forced_crash.dump                                  
+Indexing "test/dumpfiles/eshell_forced_crash.dump" [{checking,full},
+                                     {file,"test/dumpfiles/eshell_forced_crash.dump"},
                                      {rebuild,false}]
-Indexed "test/data/erl_crash.dump" in 0.218382s
+Indexed "test/dumpfiles/eshell_forced_crash.dump" in 0.218382s
 ```
 
 * `edump graph` produces a GraphViz dot file from a dump file. It will  index the dump file if necessary.
 
 ```
-edump graph test/data/erl_crash.dump -d test/data/erl_crash.full.dot -g "rankdir="TB";size=\"12,8\""
+edump graph test/dumpfiles/eshell_forced_crash.dump -d test/dumpfiles/eshell_forced_crash.full.dot -g "rankdir="TB";size=\"12,8\""
 Graph opts: #{graph_attributes => ["rankdir=TB","size=\"12,8\""],
               include_edge => #Fun<edump_proc_dot.fewer_edges.3>}
-Wrote graph to "test/data/erl_crash.full.dot"
+Wrote graph to "test/dumpfiles/eshell_forced_crash.full.dot"
 ```
 
 * `edump info` prints a description of various information from the dump file. Without options (or `--info basic`), edump presents a basic summary:
 
 ```
-$ edump info test/data/erl_crash.dump
-Crashdump "test/data/erl_crash.dump"
+$ edump info test/dumpfiles/eshell_forced_crash.dump
+Crashdump "test/dumpfiles/eshell_forced_crash.dump"
 Crashed: <<"Wed Oct  3 23:53:30 2012">>
 Slogan: A test crash
 Total memory:  9.060 Mb
@@ -114,8 +114,8 @@ Total memory:  9.060 Mb
 * `edump info --info processes` (a really clumsy CLI, I don't know how to fix that yet)
 
 ```
-$ edump info test/data/erl_crash.dump --info processes                                  
-Crashdump "test/data/erl_crash.dump"
+$ edump info test/dumpfiles/eshell_forced_crash.dump --info processes
+Crashdump "test/dumpfiles/eshell_forced_crash.dump"
 Processes (32 of 32):
    1         <0.31.0>                      (Running, 0 msgq, 4181 mem, 86159 reds)
    2          <0.6.0> application_controll (Waiting, 0 msgq, 28657 mem, 7881 reds)
@@ -150,3 +150,9 @@ Processes (32 of 32):
   31         <0.36.0>            edump_sup (Waiting, 0 msgq, 233 mem, 102 reds)
   32         <0.37.0>         edump_viewer (Waiting, 0 msgq, 233 mem, 27 reds)
 ```
+
+## Todo list
+
+* edump pstree (ala unix pstree)
+* map support
+* Check [all commits in crashdump_viewer since 2015](https://github.com/erlang/otp/commits/master/lib/observer/src/crashdump_viewer.erl)
