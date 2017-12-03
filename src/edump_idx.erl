@@ -227,7 +227,6 @@ index_file(#index{crashdump_file=File}) -> File.
 handle_index(#handle{index=Index}) -> Index.
 handle_fd(#handle{fd=Fd}) -> Fd.
 
--type segment_id () :: {mod, atom()} | {atom(), any()} | atom().
 -spec segment_id(binary()) -> segment_id().
 segment_id(Bin) ->
     case binary:split(Bin, <<":">>) of
