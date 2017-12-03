@@ -35,8 +35,7 @@ spawned_by(Info) ->
 
 links(Info) ->
     [{link, Who}
-     || Who <- proplists:get_value(links, Info, []),
-        tuple_size(Who) =:= 2].
+     || {link, Who} <- proplists:get_value(links, Info, [])].
 
 monitored_by(Info) ->
     [{monitored_by, Who, Ref}
