@@ -1,0 +1,1 @@
+Test case dump file for github issue archaelus/edump#3.
