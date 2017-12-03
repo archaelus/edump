@@ -80,9 +80,10 @@ parse_proc_data(<<"Number of heap fragments: ", Frags/binary>>) ->
     {heap_fragments, binary_to_integer(Frags)};
 parse_proc_data(<<"Heap fragment data: ", Data/binary>>) ->
     {heap_fragment_data, Data};
-parse_proc_data(<<"Link list: [", Str/binary>>) ->
-    List = binary:part(Str, 0, byte_size(Str) -1),
-    {links, parse_link_list(List)};
+parse_proc_data(<<"Link list: ", Data/binary>>) ->
+    {ok, Tokens, _} = edump_link_list:string(binary_to_list(Data)),
+    {ok, Links} = edump_link_list_parser:parse(Tokens),
+    {links, Links};
 parse_proc_data(<<"Reductions: ", Reds/binary>>) ->
     {reductions, binary_to_integer(Reds)};
 parse_proc_data(<<"Stack+heap: ", Mem/binary>>) ->
@@ -100,23 +101,6 @@ parse_proc_data(Line) ->
         [A,B] -> {A, B};
         [A] -> {unknown, A}
     end.
-
-parse_link_list(List) ->
-    [pid_tuple(T) || T <- binary:split(List, <<", ">>, [global])].
-
-pid_tuple(<<"'", NodeName/binary>>) ->
-    {node, binary:part(NodeName, 0, byte_size(NodeName)-1)};
-pid_tuple(<<"<",_/binary>> = Pid) -> {proc, Pid};
-pid_tuple(<<"#Port<",_/binary>> = Port) -> {port, Port};
-pid_tuple(<<"#Ref<",_/binary>> = Ref) -> {ref, Ref};
-pid_tuple(<<"{from,", Rest/binary>>) ->
-    [A,B] = binary:split(binary:part(Rest, 0, byte_size(Rest)-1),
-                         <<",">>),
-    {monitored_by, pid_tuple(A), pid_tuple(B)};
-pid_tuple(<<"{to,", Rest/binary>>) ->
-    [A,B] = binary:split(binary:part(Rest, 0, byte_size(Rest)-1),
-                         <<",">>),
-    {monitoring, pid_tuple(A), pid_tuple(B)}.
 
 %%====================================================================
 %% Internal functions

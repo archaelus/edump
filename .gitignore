@@ -19,3 +19,6 @@ logs
 _build
 *.dot
 *.eidx
+src/edump_link_list_parser.erl
+src/edump_link_list.erl
+*~
