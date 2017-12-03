@@ -10,6 +10,7 @@
         ,id/1
         ,ids_of_type/2
         ,id_info/2
+        ,id_info/3
         ,id_for/2
         ,related/2
         ,related_ids/2
