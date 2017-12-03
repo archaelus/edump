@@ -1,7 +1,9 @@
 -module('edump').
 
 %% API exports
--export([open/1
+-export([h/0
+        ,help/0
+        ,open/1
         ,open/2
         ,reopen/1
         ,proc_graph/1
@@ -21,6 +23,33 @@
 %%====================================================================
 %% API functions
 %%====================================================================
+
+h() -> help().
+
+-spec help() -> 'ok'.
+help() ->
+    io:put_chars(<<"Edump: File::filename(), H::edump_idx:handle(), "
+                   "Digraph::digraph:graph(), Id::edump_seg:segment_id()\n"
+                   "open(File)       -> H. Open a dump\n"
+                   "open(File, Opts) -> H. Options write_index (true, bool())\n"
+                   "                               index_checking "
+                     "(by_size, by_size|full|cheap|none)\n"
+                   "                               force_rebuild "
+                     "(false, bool())\n"
+                   "processes(H)     -> [Id]. Find all process segments\n"
+                   "ports(H)         -> [Id]. Find all port segments\n"
+                   "info(Id, H). Segment info for Id\n"
+                   "sort_procs(H). \n"
+                   "sort_procs(Opts, H). \n"
+                   "reopen(H) -> H. \n"
+                   "proc_graph(H) -> Digraph. \n"
+                   "try_parse(File). Try to parse all segment types in File. "
+                     "Stop on first error.\n"
+                   "try_parse(SegType, File). "
+                     "Parse only SegType segments in File.\n"
+                   "pread(File, Start, End) -> binary(). "
+                     "Read a block as a binary from File.\n"
+                 >>).
 
 open(CrashdumpFile) ->
     edump_idx:open(CrashdumpFile).
