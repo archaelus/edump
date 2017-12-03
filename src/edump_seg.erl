@@ -20,6 +20,7 @@
         ]).
 
 -include("edump_seg.hrl").
+-export_type([segment_id/0]).
 
 %%====================================================================
 %% API functions
