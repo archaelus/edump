@@ -50,7 +50,7 @@ id_info(proc_dictionary, Id, Handle) ->
                                  heap_for(Id, Handle))};
 id_info(proc_messages, Id, Handle) ->
     {proc_messages,
-     edump_heap:reconstruct_dict(parse_id(Id, Handle),
+     edump_heap:reconstruct_msgs(parse_id(Id, Handle),
                                  heap_for(Id, Handle))};
 id_info(proc_stack, Id, Handle) ->
     {proc_stack,
