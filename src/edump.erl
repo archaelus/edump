@@ -26,7 +26,8 @@ open(CrashdumpFile) ->
     edump_idx:open(CrashdumpFile).
 
 open(CrashdumpFile, Opts) ->
-    edump_idx:open(CrashdumpFile, Opts).
+    edump_idx:open(CrashdumpFile,
+                   maps:merge(edump_idx:default_options(), Opts)).
 
 reopen(Handle) ->
     edump_idx:reopen(Handle).
