@@ -3,6 +3,7 @@
 %% API exports
 -export([open/1
         ,open/2
+        ,default_options/0
         ,reopen/1
         ,close/1
         ,to_file/1
