@@ -19,6 +19,7 @@ related_ids({proc, Id}) ->
     [{proc_stack, Id},
      {proc_heap, Id},
      {proc_dictionary, Id},
+     {proc_messages, Id},
      {ets, Id}].
 
 related_procs(Info) ->
